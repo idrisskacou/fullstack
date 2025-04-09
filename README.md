@@ -25,7 +25,53 @@ Make sure to audit, monitor, and follow DevSecOps best practices before deployin
 - **Logging**: Elasticsearch, Kibana, Loki
 - **Others**: Additional WIP services in `other/`
 
+## Requirements
 
+- Docker & Docker Compose installed
+   - **Docker**: [Install Docker](https://docs.docker.com/get-docker/)
+   - **Docker Compose**: [Install Docker Compose](https://docs.docker.com/compose/install/)
+   ```bash 
+   docker swarm init
+- Grafana Loki plugin installed:
+  ```bash
+  docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
+
+## Setup Instructions
+
+1. Clone the Repository
+Start by cloning this repository to your local machine:
+```
+mkdir [name of directory]
+cd [path ...]
+git clone <repository-url>
+cd <repository-directory>
+```
+2. Create .env file
+```
+Include passwords and secrets in the env
+example:
+   POSTGRES_HOST=postgres-db
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=1234
+   POSTGRES_DATABASE=fullstack
+   PGADMIN_DEFAULT_EMAIL=admin@example.com
+   PGADMIN_DEFAULT_PASSWORD=admin
+```
+⚠️ Again follow DevSecOps best practices before deploying in production environment. Again Security and Security.
+
+3. Build and Deploy the Stack
+cd into directory 
+
+```
+docker compose up --build -d
+
+```
+4. Verify the Services
+
+```
+docker ps
+
+```
 ## Architecture
 
 Architecture Overview
@@ -33,15 +79,10 @@ Architecture Overview
 ``` 
 [ Nginx ]
    │
-   └──→ Serves [ Angular Frontend ]
-
-[ Nginx ]
+   └──→ Serves [ Angular Frontend ] {USER}
    │
-   └──→ Serves [ Angular Frontend ]
+   └──→ Serves [ Express Backend ] {Dev team}
 
-[ Nginx ]
-   │
-   └──→ Serves [ Express Backend ]
 
 [ Angular Frontend ]
    │
@@ -91,14 +132,6 @@ Folder Structure
 └── README.md
 └── .env
 ```
-## Requirements
-
-- Create a .env file
-- Docker & Docker Compose installed
-- Grafana Loki plugin installed:
-  ```bash
-  docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
-- 
 ## Services
 
 Access Services
@@ -121,13 +154,31 @@ Kibana          -> http://localhost:5601
 ### Build
 
 ### Running unit tests
+To run the unit tests for the backend service, navigate to the backend directory and use the following command:
+```
+docker-compose exec backend_fullstack npm test
+```
+For the frontend, you can run:
+```
+docker-compose exec frontend_fullstack npm test
 
+```
 ### Running end-to-end tests
+End-to-end tests can be run using a framework like Cypress or Protractor. 
+Run end-to-end tests for the frontend by navigating to the frontend/ directory and running:
 
+```
+docker-compose exec frontend_fullstack npm run e2e
+```
 ## Diagrams 
+
+In progress 
 
 ## Monitoring & Logging
 
+```
+docker logs <container-name>
+```
 ## Troubleshooting
 
 ## License :oncoming_police_car:
