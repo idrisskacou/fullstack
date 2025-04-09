@@ -1,0 +1,324 @@
+version: "3.8"
+
+services:
+  # ─────────────────────────────
+  # FRONTEND (Angular + Nginx)
+  # ─────────────────────────────
+  frontend:
+    image: frontend_fullstack:latest
+    container_name: frontend_fullstack
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always 
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    networks:
+      - frontend
+
+  # ─────────────────────────────
+  # BACKEND (Express.js + Node.js)
+  # ─────────────────────────────
+  backend:
+    image: backend_fullstack:latest
+    build: ./backend
+    container_name: backend_fullstack
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: "production"
+      DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DATABASE}"
+      REDIS_URL: "redis://redis:6379"
+      DB_HOST: ${POSTGRES_HOST} # DB host name
+      DB_USER: ${POSTGRES_USER} # DB user name
+      DB_PASSWORD: ${POSTGRES_PASSWORD} # DB password
+      DB_NAME: ${POSTGRES_DATABASE} # DB name
+    depends_on:
+      - postgres
+      - redis
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    networks:
+      - backend
+
+  # ─────────────────────────────
+  # DATABASE (PostgreSQL + pgAdmin)
+  # ─────────────────────────────
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DATABASE}
+    volumes:
+      - ./database/postgres-data:/var/lib/postgresql/data
+      - ./database/account.sql:/docker-entrypoint-initdb.d/account.sql
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  # ─────────────────────────────
+  # API GATEWAY (KONG)
+  # ─────────────────────────────
+  kong:
+    image: kong:latest
+    container_name: kong
+    restart: always
+    ports:
+      - "8000:8000"  # Public API
+      - "8443:8443"  # Secure API
+      - "8001:8001"  # Admin API
+    environment:
+      KONG_DATABASE: "off"
+      KONG_PROXY_ACCESS_LOG: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG: "/dev/stderr"
+      KONG_DECLARATIVE_CONFIG: "/etc/kong/kong.yml"
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    volumes:
+      - ./kong:/etc/kong
+    depends_on:
+      - backend
+    networks:
+      - frontend
+      - backend
+
+
+  # ─────────────────────────────
+  # CACHING (Redis)
+  # ─────────────────────────────
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  # ─────────────────────────────
+  # BACKGROUND JOB QUEUE (RabbitMQ)
+  # ─────────────────────────────
+  rabbitmq:
+    container_name: rabbitmq
+    image: "rabbitmq:3-management"
+    restart: always
+    depends_on:
+      - redis
+    ports:
+      - "5672:5672"   # RabbitMQ messaging port
+      - "15672:15672" # Management UI
+    networks:
+      - backend
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+
+
+  # ─────────────────────────────
+  # MONITORING (Prometheus + Grafana + Loki + cadvisor + promtail)
+  # ─────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    # volumes:
+      # - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: always
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    
+    networks:
+      - monitoring
+    entrypoint: 
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        mkdir -p /etc/grafana/provisioning/dashboards
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: false
+          editable: true
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki:3100
+          isDefault: true
+          editable: false
+        EOF
+
+        cat <<EOF > /etc/grafana/provisioning/dashboards/dashboards.yaml
+        apiVersion: 1
+        providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /etc/grafana/provisioning/dashboards
+        EOF
+        
+        /run.sh
+
+  loki:
+    image: grafana/loki:3.4
+    container_name: grafana-loki
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      # - ./loki_data:/loki
+    # restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      - backend  #depending on your needs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    restart: always
+    ports:
+      - "8080:8080"  # cAdvisor UI
+    networks:
+    
+      - backend
+    volumes:
+      - /:/rootfs:ro # Access to host root filesystem (read-only)
+      - /var/run:/var/run:rw # Access to runtime files including Docker's socket
+      - /sys:/sys:ro # Access system information (kernel stats)
+      - /var/lib/docker/:/var/lib/docker:ro # Access to Docker's storage layer
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro  # Access to cgroups for CPU, memory, blkio usage tracking
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker API socket to get container metadata
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    depends_on:
+      - loki
+
+  # ─────────────────────────────
+  # LOGGING (Elasticsearch + Kibana)
+  # ─────────────────────────────
+  elasticsearch:
+    image: elasticsearch:7.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    ports:
+      - "9200:9200"
+    networks:
+      - monitoring
+
+  kibana:
+    image: kibana:7.17.0
+    container_name: kibana
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://loki:3100/loki/api/v1/push"
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - monitoring
+
+# ─────────────────────────────
+# NETWORKS
+# ─────────────────────────────
+networks:
+  frontend:
+    driver: overlay
+  backend:
+    driver: overlay
+    attachable: true
+  monitoring:
+    driver: overlay
+
+# ─────────────────────────────
+# VOLUMES
+# ─────────────────────────────
+volumes:
+  postgres-data:
+  grafana-data:
+
+
+
+# docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions

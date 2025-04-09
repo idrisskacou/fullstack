@@ -1,0 +1,36 @@
+# Global settings
+global:
+  scrape_interval: 5s  # How often to scrape targets
+  evaluation_interval: 15s  # How often to evaluate rules
+
+# Scrape configurations
+scrape_configs:
+  # Scraping the Angular app
+  - job_name: 'angular-frontend'
+    static_configs:
+      - targets: ['localhost:4200']
+
+  # Scraping the Express backend
+  - job_name: 'express-backend'
+    static_configs:
+      - targets: ['localhost:3000']
+
+  # Scraping RabbitMQ
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15672']
+
+  # Scraping Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  # Scraping cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      - source_labels: ['container_label_com_docker_swarm_service_name']
+        target_label: 'service'
+      - source_labels: ['name']
+        target_label: 'container'
