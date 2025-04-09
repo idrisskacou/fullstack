@@ -16,6 +16,7 @@ Make sure to audit, monitor, and follow DevSecOps best practices before deployin
 ---
 
 ## Overview
+
 - **Frontend**: Angular served by Nginx
 - **Backend**: Node.js (Express)
 - **Database**: PostgreSQL + pgAdmin
@@ -24,6 +25,17 @@ Make sure to audit, monitor, and follow DevSecOps best practices before deployin
 - **Monitoring**: Prometheus + Grafana
 - **Logging**: Elasticsearch, Kibana, Loki
 - **Others**: Additional WIP services in `other/`
+  - **3D**:
+    - three.js library
+  - **AI**:
+    - Llama integration API
+  - **Chat**:
+    - Self-hosted team chat
+  - **Map**:
+    - Integrate map tools
+  - **Dashboard**:
+    - Status of all system components
+
 
 ## Requirements
 

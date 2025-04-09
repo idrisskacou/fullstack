@@ -1,0 +1,12 @@
+services:
+  proxy:
+    image: test-nginx:latest
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"  # Expose port 80 of the container to port 8080 of the host
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf  # Optional: mount custom config
+      # - ./html:/usr/share/nginx/html         # Optional: mount your website files
+

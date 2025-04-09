@@ -4,7 +4,9 @@
 - ExpressJs
 - Python 
 
-   
+```
+npm install
+```
 ## License :oncoming_police_car:
     Copyright 2023 Idriss Kacou
 
