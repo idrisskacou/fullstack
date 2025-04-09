@@ -19,6 +19,7 @@ A production-ready full-stack application powered by Docker Swarm.
 
 Architecture Overview
 ---------------------
+``` 
 [ Nginx ]
    │
    └──→ Serves [ Angular Frontend ]
@@ -49,12 +50,12 @@ Architecture Overview
    ├──→ Loki (container logs collection)
    ├──→ Elasticsearch (log storage and search)
    └──→ Kibana (log visualization)
-
+```
 ---
 
 Folder Structure
 ---------------------
-
+```
 .
 ├── backend/
 │   └── Dockerfile
@@ -78,7 +79,7 @@ Folder Structure
 ├── docker-compose.yml
 └── README.md
 └── .env
-
+```
 ## Requirements
 
 - Create a .env file
@@ -91,7 +92,7 @@ Folder Structure
 
 Access Services
 ---------------
-
+```
 Frontend        -> http://localhost
 Backend API     -> http://localhost:3000
 Kong Admin API  -> http://localhost:8001
@@ -101,7 +102,7 @@ RabbitMQ UI     -> http://localhost:15672
 Prometheus      -> http://localhost:9090
 Grafana         -> http://localhost:3000
 Kibana          -> http://localhost:5601
-
+```
 ## Usage
 
 ``` docker-compose up --build ```
