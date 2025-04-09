@@ -181,6 +181,22 @@ docker logs <container-name>
 ```
 ## Troubleshooting
 
+If you encounter issues, here are some troubleshooting tips:
+
+1. Service Not Starting:
+   - Check logs with ``` docker logs <container-name>. ```
+   - Verify that all services in docker-compose.yml are correctly defined.
+2. Port Conflicts:
+   - Ensure that no other services are using the ports required by your containers (e.g., localhost:3000 for the backend).
+3. Environment Variables:
+   - Ensure your .env file contains the correct values, especially for sensitive services like the database and API gateway.
+4. Permission Issues:
+   - Check if Docker has the required permissions to run containers and access resources on your machine.
+5. If None of the Above Work: 
+   - Contact me on Linkedin or if you're looking to discuss job opportunities for me, feel free to reach out through the same channels.
+
+
+
 ## License :oncoming_police_car:
     Copyright 2023 Idriss Kacou
 
