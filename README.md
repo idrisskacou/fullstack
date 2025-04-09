@@ -1,6 +1,17 @@
-# Full-Stack Deployment Docker Swarm
+# Full-Stack Deployment with Docker Swarm
 
-A production-ready full-stack application powered by Docker Swarm. 
+This is a Full-Stack application deployed using Docker Swarm.  
+
+⚠️ **Security Notice:** This setup uses default credentials and is intended for development or internal testing environments.  
+For production use, you should:
+
+- Replace all default passwords and secrets.
+- Configure secure authentication (e.g., LDAP, OAuth2, or SSO).
+- Enable TLS/SSL for all services handling sensitive data.
+- Harden exposed services (e.g., Kong, pgAdmin, Redis, RabbitMQ) by limiting access and enforcing auth.
+- Review firewall and network rules to restrict access.
+
+Make sure to audit, monitor, and follow DevSecOps best practices before deploying to any public or production environment.
 
 ---
 
@@ -87,7 +98,7 @@ Folder Structure
 - Grafana Loki plugin installed:
   ```bash
   docker plugin install grafana/loki-docker-driver:latest --alias loki --grant-all-permissions
-
+- 
 ## Services
 
 Access Services
